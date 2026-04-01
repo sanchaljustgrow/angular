@@ -1,0 +1,66 @@
+name: Deploy Angular to EC2
+
+on:  
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    # 1. Checkout code
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # 2. Setup Node
+    - name: Setup Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    # 3. Install dependencies
+    - name: Install Dependencies
+      run: npm install
+
+    # 4. Install Angular CLI
+    - name: Install Angular CLI
+      run: npm install -g @angular/cli
+
+    # 5. Build Angular
+    - name: Build Angular
+      run: ng build --configuration production
+
+    # 6. Copy dist to EC2
+    - name: Copy files to EC2
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_KEY }}
+        port: ${{ secrets.EC2_PORT }}
+        source: "dist/*"
+        target: "/home/ubuntu/angular-app"
+
+    # 7. Deploy on EC2
+    - name: Deploy
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_KEY }}
+        port: ${{ secrets.EC2_PORT }}
+        script: |
+
+          echo "Install Node + PM2"
+          curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+
+          sudo npm install -g pm2 serve
+
+          echo "Restart app"
+          pm2 delete angular-app || true
+          pm2 start "serve -s /home/ubuntu/angular-app -l 80" --name angular-app
+          pm2 save
