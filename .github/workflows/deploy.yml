@@ -9,7 +9,6 @@ jobs:
 deploy:
 runs-on: ubuntu-latest
 
-```
 steps:
 
 # 1. Checkout code
@@ -76,4 +75,4 @@ steps:
 
       echo "App started on port 80 🚀"
       echo "===== DEPLOYMENT SUCCESS ====="
-```
+
