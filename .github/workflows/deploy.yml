@@ -2,8 +2,8 @@ name: Deploy Angular to EC2
 
 on:
 push:
-branches:
-- main
+ branches:
+   - main
 
 jobs:
 deploy:
@@ -52,26 +52,20 @@ steps:
       script: |
         echo "===== START DEPLOYMENT ====="
 
-        echo "Updating system..."
         sudo apt update -y
 
-        echo "Installing Node.js (if not installed)..."
         if ! command -v node > /dev/null 2>&1; then
           curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
           sudo apt-get install -y nodejs
         fi
 
-        echo "Node version:"
         node -v
 
-        echo "Installing serve..."
         sudo npm install -g serve
 
-        echo "Stopping old app..."
         pkill -f "serve" || true
         sleep 2
 
-        echo "Starting Angular app..."
         nohup serve -s /home/ubuntu/angular-app -l 80 > /home/ubuntu/app.log 2>&1 &
 
         echo "App started on port 80 🚀"
