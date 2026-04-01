@@ -1,4 +1,4 @@
-```yaml
+
 name: Deploy Angular to EC2
 
 on:
@@ -72,4 +72,3 @@ jobs:
           nohup serve -s /home/ubuntu/angular-app -l 80 > app.log 2>&1 &
 
           echo "Deployment completed ✅"
-```
