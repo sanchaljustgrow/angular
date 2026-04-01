@@ -24,22 +24,33 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Build Angular/React app
+      # Build Angular app
       - name: Build project
         run: npm run build
 
-      # Deploy build files to EC2
+      # Create directory on EC2 (fix your previous error)
+      - name: Prepare EC2 directory
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            sudo mkdir -p /var/www/app
+            sudo chown -R ubuntu:ubuntu /var/www/app
+
+      # Deploy files to EC2
       - name: Deploy to EC2
         uses: easingthemes/ssh-deploy@main
         env:
           SSH_PRIVATE_KEY: ${{ secrets.EC2_KEY }}
           REMOTE_HOST: ${{ secrets.EC2_HOST }}
           REMOTE_USER: ${{ secrets.EC2_USER }}
-          SOURCE: dist/
+          SOURCE: dist/angular-api-gateway-app/browser/
           TARGET: /var/www/app/
           ARGS: "-avz --delete"
 
-      # Restart Nginx on EC2
+      # Restart Nginx
       - name: Restart Nginx
         uses: appleboy/ssh-action@master
         with:
