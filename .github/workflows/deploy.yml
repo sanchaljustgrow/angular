@@ -1,4 +1,4 @@
-```yaml
+
 name: Deploy Angular to EC2
 
 on:
@@ -79,4 +79,4 @@ jobs:
           echo "App started on port 80 🚀"
 
           echo "===== DEPLOYMENT SUCCESS ====="
-```
+
