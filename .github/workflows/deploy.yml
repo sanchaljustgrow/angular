@@ -1,4 +1,4 @@
-
+```yaml
 name: Deploy Angular to EC2
 
 on:
@@ -16,19 +16,19 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    # 2. Setup Node.js (Angular 21 requires Node 20+)
+    # 2. Setup Node (Angular 21 requires Node 20+)
     - name: Setup Node
       uses: actions/setup-node@v3
       with:
         node-version: 20
 
-    # 3. Install dependencies (clean install)
+    # 3. Clean install dependencies
     - name: Install Dependencies
       run: |
         rm -rf node_modules package-lock.json
         npm install
 
-    # 4. Build Angular App (SSR project)
+    # 4. Build Angular app (SSR project)
     - name: Build Angular App
       run: npm run build
 
@@ -52,23 +52,31 @@ jobs:
         key: ${{ secrets.EC2_KEY }}
         port: ${{ secrets.EC2_PORT }}
         script: |
-          echo "Updating server..."
+          echo "===== START DEPLOYMENT ====="
+
+          echo "Updating system..."
           sudo apt update -y
 
-          echo "Installing Node.js 20 (if not installed)..."
-          if ! command -v node &> /dev/null
-          then
+          echo "Installing Node.js (if not installed)..."
+          if ! command -v node > /dev/null 2>&1; then
             curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
             sudo apt-get install -y nodejs
           fi
+
+          echo "Node version:"
+          node -v
 
           echo "Installing serve..."
           sudo npm install -g serve
 
           echo "Stopping old app..."
           pkill -f "serve" || true
+          sleep 2
 
           echo "Starting Angular app..."
-          nohup serve -s /home/ubuntu/angular-app -l 80 > app.log 2>&1 &
+          nohup serve -s /home/ubuntu/angular-app -l 80 > /home/ubuntu/app.log 2>&1 &
 
-          echo "Deployment completed ✅"
+          echo "App started on port 80 🚀"
+
+          echo "===== DEPLOYMENT SUCCESS ====="
+```
