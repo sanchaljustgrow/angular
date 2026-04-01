@@ -1,23 +1,24 @@
-name: deployec2-node
+name: Deploy EC2 Angular App
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout code
+      # Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Setup Node
+      # Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20.x
+          node-version: 20
           cache: npm
 
       # Install dependencies
@@ -28,13 +29,12 @@ jobs:
       - name: Build Angular
         run: npm run build
 
-      # 🔍 Show dist structure (IMPORTANT for debugging)
+      # Debug: show dist structure
       - name: Show dist folder
         run: ls -R dist
 
-      # Set correct build folder dynamically
+      # Detect Angular build folder dynamically
       - name: Detect build folder
-        id: detect
         run: |
           BUILD_PATH=$(find dist -type f -name index.html | head -n 1 | sed 's|/index.html||')
           echo "BUILD_PATH=$BUILD_PATH" >> $GITHUB_ENV
@@ -51,7 +51,7 @@ jobs:
             sudo mkdir -p /var/www/app
             sudo chown -R ubuntu:ubuntu /var/www/app
 
-      # Deploy files (auto-detected path)
+      # Deploy Angular build to EC2
       - name: Deploy to EC2
         uses: easingthemes/ssh-deploy@main
         env:
@@ -62,22 +62,30 @@ jobs:
           TARGET: /var/www/app/
           ARGS: "-avz --delete"
 
-      # Start app on EC2 (NO NGINX)
-      - name: Start application
+      # Start app using PM2 (fixes exit 143)
+      - name: Start application with PM2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            # Install serve if not exists
-            if ! command -v serve &> /dev/null
-            then
+            # Install PM2 if not installed
+            if ! command -v pm2 >/dev/null 2>&1; then
+              sudo npm install -g pm2
+            fi
+
+            # Install serve if not installed
+            if ! command -v serve >/dev/null 2>&1; then
               sudo npm install -g serve
             fi
 
-            # Stop previous app
-            pkill -f serve || true
+            # Stop old instance
+            pm2 delete angular-app || true
 
-            # Start app on port 80
-            nohup serve -s /var/www/app -l 80 > app.log 2>&1 &
+            # Start Angular app on port 80
+            pm2 start "serve -s /var/www/app -l 80" --name angular-app
+
+            # Save PM2 process list
+            pm2 save
+``
